@@ -114,9 +114,9 @@ Module Export Pushout.
              {B : Type} (g1 : B1 -> B) (g2 : B2 -> B)
              (H : forall a : A, (g1 (f1 a) = g2 (f2 a))) (x : Pushout f1 f2) : B :=
     match x with
-    |inl  b1 => (fun _ => g1 b1) 
-    |inr  b2 => (fun _ => g2 b2)
-    end H.
+    |inl  b1 => g1 b1
+    |inr  b2 => g2 b2
+    end.
 
   Axiom Pushout_rect_compute_coh : forall {A B1 B2} {f1 : A -> B1} {f2 : A -> B2} {B} {g1 : B1 -> B} {g2 : B2 -> B} {H a},
       ap (@Pushout_rect _ _ _ f1 f2 _ g1 g2 H) (incoh a) = H a.
@@ -130,9 +130,9 @@ Module Export Pushout.
            (x : Pushout f1 f2), P x :=
     (fun P g1 g2 H x =>
        match x with
-       |inl b1 => (fun _ => g1 b1)
-       |inr b2 => (fun _ => g2 b2)
-       end H
+       |inl b1 => g1 b1
+       |inr b2 => g2 b2
+       end
     ).
  
   Axiom Pushout_rect_dep_compute :

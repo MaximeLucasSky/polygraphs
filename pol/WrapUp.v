@@ -140,7 +140,7 @@ Proof.
   destruct n.
   - exact 1.
   -  simpl. simple refine (eq_MPol _ _ _ _ _ _ _ _ _ _ _).
-     + refine ((ComposeM_assoc _ _ _ _ _ _ _)^ @ _).
+     + refine ((fstd (ComposeM_assoc _ _ _ _ _ _ _))^ @ _).
        unfold injectPol.
        refine ((ap (fun W => ComposeM (Unit (Forget T n)) W) (Forget_composeM _ _ _ _ _ _)) @ _).
        change (injectA (ForgetA (Counit T n) (S n))) with (injectPol _ (ForgetA (Counit T n) (S n))).

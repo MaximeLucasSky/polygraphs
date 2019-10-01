@@ -100,6 +100,11 @@ Defined.
 
 Definition compose {A B C : Type} (f : B -> C) (g : A -> B) : A -> C := fun (x : _) => f (g x).
 
+Hint Unfold compose.
+
+Notation " g ∘ f " := (compose g f)
+                        (at level 40, left associativity) : poly_scope.
+
 Lemma compose_assoc {A B C D : Type} (f : C -> D) (g : B -> C) (h : A -> B) : compose f (compose g h) = compose ( compose f g) h.
 Proof.
   constructor.
