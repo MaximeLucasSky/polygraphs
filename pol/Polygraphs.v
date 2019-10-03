@@ -17,16 +17,20 @@ Definition FreeType {F : Type} {n : nat} (X : @Augmentation F n) : Type :=
 
  *)
 
+Variable (A : nat -> Type)
+         (B : nat -> Type)
+         (ι : forall n : nat, A n -> B n).
+              
+
 Inductive Pol : nat -> Type :=
 |Disc : Type -> Pol 0
-|Ext {n : nat} (P : Pol n) (E : Type) (d : E * Sphere (S n) -> Free P) : Pol (S n)
+|Ext {n : nat} (P : Pol n) (E : Type) (d : E * A (S n) -> Free P) : Pol (S n)
 fix Free {n : nat} (P : Pol n) : Type :=
   match P with
   | Disc A => A
-  | Ext n0 _ E d => Pushout d (fun x => (fst x, Faces _ (snd x)) : E * Ball (S n0))
+  | Ext n0 _ E d => Pushout d (fun x => (fst x, ι _ (snd x)) : E * B (S n0))
   end.
 
-Opaque Free.
 
 Definition case0 (P : Pol 0 -> Type) (H : forall (T : Type), P (Disc T))  (p : Pol 0) : P p := 
   match p with
@@ -39,15 +43,57 @@ Notation "[ P ]*" := (Free P) : poly_scope.
 Open Scope poly_scope.
 
 Definition caseS' (n : nat) (p : Pol (S n)) :
-  forall (P : Pol (S n) -> Type) (H : forall (p : Pol n) (E : Type) (d : E * Sphere (S n) -> [p]* ), P (Ext p E d)), P p :=
+  forall (P : Pol (S n) -> Type) (H : forall (p : Pol n) (E : Type) (d : E * A (S n) -> [p]* ), P (Ext p E d)), P p :=
   match p with
   |Ext p' E d  => fun P H => H p' E d
   |_ => tt
   end.
 
 
+
+Definition tr (n : nat) : Pol (S n) -> Pol n.
+Proof.
+  intro P. destruct P using (caseS' n).
+  exact P.
+Defined.
+
+Definition ooPol : Type := {P : forall n : nat, Pol n | forall n : nat, tr n (P (S n)) = P n}.
+
+
+
+Definition inj {n : nat} (P : Pol n) (Q : Pol (S n)) (e : tr n Q = P) : [ P ]* -> [ Q ]*. 
+Proof.
+  intro.
+  destruct Q using (caseS' _).
+  apply inl. change [Q ]*. simpl in e. destruct e. exact X.
+Defined.
+
+Definition ootr (n :nat) (P : ooPol) : Pol n.
+  destruct P.
+  exact (fstd n).
+Defined.
+
+Module Export ooFreeType.
+
+  Variable (P : ooPol).
+  
+  Private Inductive ooFree : Type :=
+  | c : forall n : nat, [ootr n P]* -> ooFree.
+
+  Lemma tr_coh : forall n : nat, tr n (ootr (S n) P) = ootr n P.
+    intro n. destruct P. simpl. apply sndd.
+  Defined.
+
+  Axiom pathooFree : forall (n : nat) (x : [ootr n P]* ), c n x = c (S n) (inj _ _ (tr_coh _) x). 
+                                
+  Definition SuspensionInduction {T : Type} (iT : forall n : nat, [ootr n P]* -> T)                                           
+             (f:  forall (n : nat) (x : [ootr n P]* ), iT n x = iT (S n) (inj _ _ (tr_coh _) x) )  (x : ooFree) : T :=
+    match x with
+    |c n x => iT n x
+    end.
+
 Section FreeMA_sec.
-Context  {n : nat} {P P' : Pol n} {E E' : Type} {d : E * Sphere (S n) -> [P]*} {d' : E' * Sphere (S n) -> [P']* }
+Context  {n : nat} {P P' : Pol n} {E E' : Type} {d : E * A (S n) -> [P]*} {d' : E' * A (S n) -> [P']* }
          (Φ : [P]*  -> [P']* )
          (ϕ : E -> E')
          (H : forall a, d' (ϕ (fst a), (snd a)) = Φ (d a)).
@@ -63,7 +109,7 @@ Proof.
     exact (incoh (ϕ (fst a), snd a)).
 Defined.                           
 
-Definition FreeMA_compute  (a : E * Sphere (S n)) :
+Definition FreeMA_compute  (a : E * A (S n)) :
   ap FreeMA (incoh a) = ap inl (H a)^ @ incoh (f1 := d') (ϕ (fst a), snd a).
 Proof.
   refine Pushout_rect_compute_coh.
@@ -72,8 +118,8 @@ Defined.
 End FreeMA_sec.
 
 Definition H12  {n : nat} {P P' P'': Pol n} {E E' E'' : Type}
-           {d : E * Sphere (S n) -> [P]* } {d' : E' * Sphere (S n) -> [P']* }
-           {d'' : E'' * Sphere (S n) -> [P'']* }
+           {d : E * A (S n) -> [P]* } {d' : E' * A (S n) -> [P']* }
+           {d'' : E'' * A (S n) -> [P'']* }
            (Φ1 : [P]*  -> [P']* ) (ϕ1 : E -> E') (H1 : forall a, d' (ϕ1 (fst a), (snd a)) = Φ1 (d a))
            (Φ2 : [P']*  -> [P'']* ) (ϕ2 : E' -> E'') (H2 : forall a, d'' (ϕ2 (fst a), (snd a)) = Φ2 (d' a)) :
   forall a, d'' (ϕ2 (ϕ1 (fst a)), snd a) = Φ2 (Φ1 (d a)).
@@ -83,8 +129,8 @@ Proof.
 Defined.
 
 Definition FreeComposeMA  {n : nat} {P P' P'': Pol n} {E E' E'' : Type}
-           {d : E * Sphere (S n) -> [P]* } {d' : E' * Sphere (S n) -> [P']* }
-           {d'' : E'' * Sphere (S n) -> [P'']* }
+           {d : E * A (S n) -> [P]* } {d' : E' * A (S n) -> [P']* }
+           {d'' : E'' * A (S n) -> [P'']* }
            (Φ1 : [P]*  -> [P']* ) (ϕ1 : E -> E') (H1 : forall a, d' (ϕ1 (fst a), (snd a)) = Φ1 (d a))
            (Φ2 : [P']*  -> [P'']* ) (ϕ2 : E' -> E'') (H2 : forall a, d'' (ϕ2 (fst a), (snd a)) = Φ2 (d' a)) :
   FreeMA (Φ2 ∘ Φ1) (ϕ2 ∘ ϕ1) (H12 Φ1 ϕ1 H1 Φ2 ϕ2 H2) = (FreeMA Φ2 ϕ2 H2) ∘ (FreeMA Φ1 ϕ1 H1).
@@ -122,7 +168,7 @@ Defined.
 
 Inductive MPol : forall n : nat, (Pol n) -> (Pol n) -> Type :=
 | DiscM (T T' : Type) : (T -> T') -> MPol 0 (Disc T) (Disc T')
-| ExtM (n : nat) (P P' : Pol n) (E E' : Type) (d : E * Sphere (S n) -> [P]* ) (d' : E' * Sphere (S n) -> [P']* ) 
+| ExtM (n : nat) (P P' : Pol n) (E E' : Type) (d : E * A (S n) -> [P]* ) (d' : E' * A (S n) -> [P']* ) 
        (Φ : MPol n P P')
        (ϕ : E -> E')
        (H : forall a, d' (ϕ (fst a), (snd a)) = (FreeM P P' Φ) (d a)) : MPol (S n) (Ext P E d) (Ext P' E' d') 
@@ -167,8 +213,8 @@ Definition caseM0 (T T' : Type)  (m : MPol (Disc T) (Disc T')):
   end.
 
 
-Definition caseMS' (n : nat) (p p' : Pol n) (E E' : Type) (d : E * (Sphere  (S n)) -> [p]* )
-           (d' : E' * (Sphere (S n)) -> [p']* )
+Definition caseMS' (n : nat) (p p' : Pol n) (E E' : Type) (d : E * (A  (S n)) -> [p]* )
+           (d' : E' * (A (S n)) -> [p']* )
            (m : MPol (Ext p E d) (Ext p' E' d')) :
   forall (P : MPol (Ext p E d) (Ext p' E' d') -> Type)
     (HS : forall  (Φ : MPol p p')
@@ -184,11 +230,11 @@ Definition caseMS' (n : nat) (p p' : Pol n) (E E' : Type) (d : E * (Sphere  (S n
                                             => forall P H, P m)
                m)
   with
-  | ExtM Φ ϕ Hf =>  _
+  | ExtM Φ ϕ Hf => _
   | _ => tt 
   end).
-  simpl. intros. apply H. Defined.
-
+  exact (fun P H => H Φ ϕ Hf). Defined.
+Print caseMS'.
 
 
 Fixpoint PolyComposeAndFree {n : nat} (p q r : Pol n) (f : MPol p q) (g : MPol q r) {struct n}:
