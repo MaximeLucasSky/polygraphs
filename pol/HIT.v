@@ -206,7 +206,6 @@ Proof.
   - reflexivity.
   - reflexivity.
   - intros. simpl.
-    simple refine ((concat_1p _) @ _).
     simple refine (_ @ (concat_p1 _)^).
     simple refine (Pushout_rect_compute_coh @ _).
     match goal with
@@ -221,7 +220,7 @@ Proof.
     end.
     match goal with
     | |- _ = ?p1 @ _ @ ?p2 => simple refine (concat _ (ap (fun W => p1 @ W @ p2) Pushout_rect_compute_coh^))
-    end.
+    end. 
     match goal with
     | |- _ = ?p1 @ _ => simple refine (concat _ (ap (fun W => p1 @ W) Pushout_rect_compute_inr^))
     end.

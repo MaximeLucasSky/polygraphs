@@ -23,7 +23,7 @@ Definition CounitA {T F : Type} (n : nat)  ( f : F -> T ) : FreeA (ForgetA f n) 
 Proof.
   simple refine (Pushout_rect _ _ _).
   - exact f.
-  - intro. exact (pi1 (fst X) (snd X)).
+  - intro. exact (pi1 X,1 X,2).
   - intros [x e]. simpl. exact (ap (fun W => W e) (coh x)^).
 Defined.
 
@@ -54,35 +54,61 @@ Opaque ForgetAndCounit.
 (*   destruct p. exact (ap (fun W => (x,W)) q).  *)
 (* Defined. *)
 
-Lemma eq_MA {F F' : Type} {n : nat} {f : F -> F'} {E E' : Type} {d : E * Sphere n -> F} {d' : E' * Sphere n -> F'}
-      {GE HE : E -> E'} (Gcoh :  forall e x, d' (GE e, x) = f (d (e, x))) (Hcoh : forall e x, d' (HE e, x) = f (d (e, x)))
-      (p : GE = HE )
-      (q : forall e x,  (ap (fun W => d' (W e, x)) p) @ (Hcoh e x) = (Gcoh e x)) :
-    (mkMAug GE Gcoh) = (mkMAug HE Hcoh) :> MAug f (mkAug E d) (mkAug E' d').
+Lemma eq_MA {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x, ((ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x)) =  Md G e x) :
+    G = H :> MAug f aug aug'.
 Proof.
-  destruct p.
-  assert (Gcoh = Hcoh).
+  destruct H as [HME HMd].
+  simpl in  p. destruct p.
+  assert (Md G = HMd).
   {
-    repeat (apply FunExtDep; intro).
-    destruct (q x x0). apply concat_1p.
+    repeat (apply FunExtDep; intro). simpl in *.
+    exact ((q x x0)^).
   }
-  destruct H. reflexivity.
+  now destruct H. 
 Defined.
 
 
-Lemma FreeMA_eq  {F F' : Type} {n : nat} {f : F -> F'} {E E' : Type} {d : E * Sphere n -> F} {d' : E' * Sphere n -> F'}
-      {GE HE : E -> E'} (Gcoh :  forall e x, d' (GE e, x) = f (d (e, x))) (Hcoh : forall e x, d' (HE e, x) = f (d (e, x)))
-      (p : GE = HE) (q : forall e x,  (ap (fun W => d' (W e, x)) p) @ (Hcoh e x) = (Gcoh e x)) :
-  FreeMA (mkMAug GE Gcoh) = FreeMA (mkMAug HE Hcoh) :> (FreeA (mkAug E d) -> FreeA (mkAug E' d')).
+Lemma FreeMA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n}
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x))
+      (x : E aug × Ball n) :
+  FreeMA G (inr x) = inr (mkPair (ME G x,1) x,2).
 Proof.
-  destruct p.
-  simpl in q.
-  assert (Gcoh = Hcoh).
+  reflexivity.
+Defined.
+
+Lemma eq_MA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x))
+      (x : E aug × Ball n) :
+  ap (fun T => FreeMA T (inr x)) (eq_MA G H p q) = ap (fun T => inr (mkPair (T x,1) x,2)) p.
+Proof.
+  simpl. unfold eq_MA. destruct H as [HE Hd]. simpl in *.
+  destruct p. simpl in *.
+  match goal with
+  | |- ap _ (match ?a return _ with |_ => _ end q) = 1 => destruct a
+  end.
+  reflexivity.
+Defined.
+
+Lemma FreeMA_eq  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x)) :
+  FreeMA G = FreeMA H :> ([aug]* -> [aug']* ).
+Proof.
+  destruct H as [HME HMd].
+  simpl in  p. destruct p.
+  assert (Md G = HMd).
   {
-    repeat (apply FunExtDep; intro).
-    destruct (q x x0). apply concat_1p.
+    repeat (apply FunExtDep; intro). simpl in *.
+    exact ((q x x0)^).
   }
-  destruct H. reflexivity.
+  now destruct H.                   
 Defined.
 
 
@@ -106,39 +132,37 @@ Proof.
   set (q' := FunExtDep (fun e => (FunExtDep (fun x => q e x)))).
   assert ((fun e x => (ap (fun W => W e x) q')) = q).
   { subst q'. repeat (apply FunExtDep; intro).
-    change (fun W : forall (x1 : E) (x2 : X), A x1 x2 => W x x0) with (compose (fun W : forall x2, A x x2 => W x0)  (fun W : forall x1 x2, A x1 x2 => W x)).
-    rewrite ap_compose.
-    unfold compose.
+    rewrite (ap_compose (fun W => W x) (fun W => W x0)).
     rewrite (ap_FunExt (fun e => FunExtDep (fun x1 : X => q e x1)) x).
     rewrite ap_FunExt. reflexivity.
   }
   clearbody q'. destruct H0. destruct q'. apply H.
 Defined.
 
-Lemma ap_FreeMA  {F F' : Type} {n : nat} {f : F -> F'} {E E' : Type} {d : E * Sphere n -> F} {d' : E' * Sphere n -> F'}
-      (GE HE : E -> E') (Gcoh :  forall e x, d' (GE e, x)= f (d (e, x))) (Hcoh : forall e x, d' (HE e, x) = f (d (e, x)))
-      (p : GE = HE) (q : forall e x,  (ap (fun W => d' (W e, x)) p) @ (Hcoh e x) = (Gcoh e x)) :
-  ap FreeMA (eq_MA Gcoh Hcoh p q) = FreeMA_eq Gcoh Hcoh p q :> (FreeMA (mkMAug GE Gcoh) = FreeMA (mkMAug HE Hcoh) :> (FreeA (mkAug E d) -> FreeA (mkAug E' d'))).
+Lemma ap_FreeMA  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x)):
+  ap FreeMA (eq_MA G H p q) = FreeMA_eq G H p q :> (FreeMA G = FreeMA H :> (FreeA aug -> FreeA aug')).
 Proof.
+  destruct H as [HE Hd]. simpl in *.
   destruct p. simpl in q.
-  set (q' := fun e x => (concat_1p _ )^ @ q e x).
-  assert ((fun e x => (concat_1p _) @ (q' e x)) = q).
-  { apply FunExtDep. intro. apply FunExtDep. intro. subst q'. simpl.
-    rewrite assoc. rewrite concat_pV. exact (concat_1p _).
-  }
-  clearbody q'. destruct H.
+  (* set (q' := fun e x => (concat_1p _ )^ @ q e x). *)
+  (* assert ((fun e x => (concat_1p _) @ (q' e x)) = q). *)
+  (* { apply FunExtDep. intro. apply FunExtDep. intro. subst q'. simpl. *)
+  (*   rewrite assoc. rewrite concat_pV. exact (concat_1p _). *)
+  (* } *)
+  (* clearbody q'. destruct H. *)
   refine (destruct_fun_eq (fun G1 G2 q =>
-                             ap FreeMA (eq_MA G2 G1 1 (fun (e : E) (x : Sphere n) => (concat_1p (G1 e x)) @ q e x)) =
-                             FreeMA_eq G2 G1 1 (fun (e : E) (x : Sphere n) => (concat_1p (G1 e x)) @ q e x))
-                          _ q').
-  intro. clear Gcoh Hcoh q'. simpl.
-  destruct (FunExtDep
-      (fun x : E =>
-       FunExtDep (fun x0 : Sphere n => match concat_1p (G x x0) @ 1 in (_ = y) return (y = G x x0) with
-                                       | 1 => concat_1p (G x x0)
-                                       end))). reflexivity.
+                             ap FreeMA (eq_MA (mkMAug (ME G) G2) (mkMAug (ME G) G1) 1 q ) =
+                             FreeMA_eq (mkMAug (ME G) G2)  (mkMAug (ME G) G1) 1 q )
+                          _ q).
+  intro. clear Hd q. simpl.
+  match goal with
+  | |- ap FreeMA
+         (match ?f in (_ = y) return _ with | _ => _ end _) = _ => destruct f
+  end. reflexivity.
 Defined.
-
 
 
 Definition ForgetMA (n : nat) {T T' : Type} {F F' : Type} (g : F -> T) (g' : F' -> T')  (Ff: F -> F') (Tf : T -> T')
@@ -158,6 +182,16 @@ Proof.
   - simpl. reflexivity.
 Defined.
 
+Definition pre_ap_counit_coh {T F : Type} (n : nat)  ( f : F -> T ) (a : E (ForgetA f n) × Sphere n) :
+  CounitA n f (inl (d (ForgetA f n) a)) = CounitA n f (inr {| fst := a,1; snd := Faces n a,2 |}) :=
+  ap (fun T => T a,2) (coh a,1)^.
+  
+Lemma ap_counit_coh {T F : Type} (n : nat)  ( f : F -> T ) (a : E (ForgetA f n) × Sphere n) :
+  (ap (fun x : [ForgetA f n ]* => CounitA n f x) (incoh a)) =  ap (fun T => T a,2) (coh a,1)^.
+Proof.
+  exact Pushout_rect_compute_coh.
+Defined.
+
 Definition NaturalMA (n : nat) {T T' : Type} {F F' : Type} (g : F -> T) (g' : F' -> T')  (Ff: F -> F') (Tf : T -> T')
            (H : (compose g' Ff) = (compose Tf g)) :
   compose (CounitA n g') (FreeMA (ForgetMA n g g' Ff Tf H))  = compose Tf (CounitA n g).
@@ -165,25 +199,22 @@ Proof.
   apply funext. simple refine (eqMorphPushout _ _ _).
   - unfold compose. simpl. intro b. exact (ap (fun W => W b) H).
   - reflexivity.
-  - intros [a a']. unfold compose. simpl.
+  - intro a. unfold compose. simpl.
     simple refine (_ @ (concat_p1 _)^).
     match goal with
     | |- _ = ap (fun x => CounitA n g' (?f x)) ?p =>
       simple refine (_ @ (ap_compose f (CounitA n g') p)^)  
     end.
-    match goal with
-    | |- _ = compose ?f _ _ => simple refine (_ @ (ap (fun W => f W) Pushout_rect_compute_coh^))
-    end.
+    unfold FreeMA.
+    simple refine (_ @ (ap (fun W => ap (CounitA n g') W) Pushout_rect_compute_coh^)).
     simple refine (_ @ (ap_concat _ _ _)^).
-    simple refine (_ @ (concat_1p _)^).
     simple refine (_ @ Pushout_rect_compute_coh^).
     simpl. unfold compose_assoc.
     simple refine (_ @ (concat_ap_V _ _)^).
     match goal with
-    | |- _ = (ap ?f (((1 @ ?p @ 1) @ ?q) @ 1))^ =>
+    | |- _ = (ap ?f (((?p @ 1) @ ?q) @ 1))^ =>
       simple refine (_ @ (ap (fun W => (ap f W)^) (concat_p1 _)^));
-        simple refine (_ @ (ap (fun W => (ap f (W @ q))^) (concat_p1 _)^));
-        simple refine (_ @ (ap (fun W => (ap f (W @ q))^) (concat_1p _)^))
+        simple refine (_ @ (ap (fun W => (ap f (W @ q))^) (concat_p1 _)^))
     end.
     match goal with
     | |- _ = (ap ?f (?p @ ?q))^ => simple refine (_ @ (ap (fun W => W^) (ap_concat f p q)^))
@@ -207,9 +238,9 @@ Proof.
     | |- ?p @ ap (fun x => Tf (@?f x)) ?q = _ =>
       simple refine (ap (fun W => p @ W) (ap_compose f Tf q) @ _)
     end.
-    unfold compose. unfold CounitA. simpl. destruct a. simpl.
+    unfold compose. 
     match goal with
-    | |- ?p @ ap Tf _ = _ => simple refine (ap (fun W => p @ ap Tf W) Pushout_rect_compute_coh @ _)
+    | |- ?p @ ap Tf _ = _ => simple refine (ap (fun W => p @ ap Tf W) (ap_counit_coh _ _ _) @ _)
     end. simpl.
     match goal with
     | |- ?p @ ap ?f (ap ?g ?q ^) = _ =>

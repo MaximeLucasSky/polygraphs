@@ -58,7 +58,7 @@ Notation "p ^" := (inverse p) (at level 3) : type_scope.
 
 
 Definition concat {A: Type} {x y z : A} (p : x = y) (q : y = z) : (x = z).
-  destruct p,q. constructor.
+  destruct p. exact q.
 Defined.
 
 Arguments concat {A x y z} p q : simpl nomatch.
@@ -66,10 +66,6 @@ Arguments concat {A x y z} p q : simpl nomatch.
 Notation "p @ q" := (concat p q) (at level 20) : type_scope.
 
 
-Definition concat_1p {A: Type}  {x y : A}  (p : x = y) :  1 @ p = p :=
-  match p with
-  |1 => 1
-  end.
 Definition concat_p1 {A : Type} {x y: A}  (p : x = y) :  p @ 1 = p :=
   match p with
   |1 => 1
@@ -88,14 +84,14 @@ Definition concat_VV {A : Type} {x y : A} (p : x = y) : p^^ = p :=
   end.
 Definition concat_V {A : Type} {x y z : A} (p : x = y) (q : y = z) : (p @ q)^ = (q^ @ p ^).
 Proof.
-  destruct p.
+  destruct p. simpl.
   destruct q.
   exact 1.
 Defined.
 
 Definition assoc {A : Type} {x y z t: A} (p : x = y) (q : y = z) (r : z = t) : p @ (q @ r) = (p @ q) @ r.
 Proof.
-  destruct p, q, r. constructor.
+  destruct p, q. reflexivity.
 Defined.
 
 Definition compose {A B C : Type} (f : B -> C) (g : A -> B) : A -> C := fun (x : _) => f (g x).
@@ -146,7 +142,7 @@ Lemma transport_lemma {T T' : Type}
       {x y : T} (p : x = y) (F : T -> T') (G : T -> T') (Hx : F x = G x) (Hy : F y = G y):
   Hx @ ap G p =  ap F p @ Hy -> transport (fun t => F t = G t) p Hx = Hy.
 Proof.
-  destruct p. simpl. intro H. rewrite concat_1p, concat_p1 in H. exact H.
+  destruct p. simpl. intro H. rewrite concat_p1 in H. exact H.
 Defined.
 
 Lemma transport_lambda {T T' : Type}
@@ -162,7 +158,7 @@ Proof.
   destruct p. reflexivity.
 Defined.
 
-Lemma ap_compose {T1 T2 T3: Type} (F: T1 -> T2) (G : T2 -> T3) {x y : T1} (p : x = y) : ap (compose G F) p =  (compose (ap G) (ap F)) p.
+Lemma ap_compose {T1 T2 T3: Type} (F: T1 -> T2) (G : T2 -> T3) {x y : T1} (p : x = y) : ap (fun x => G (F x)) p =  (ap G) ((ap F) p).
 Proof.
   destruct p.
   reflexivity.
@@ -275,16 +271,15 @@ Proof.
   simple refine (f_understood_forall f (fun g (p : forall a : A, f a = g a) => (fun a => ap (fun W => W a) (FunExtDep p))) x g p @ _). simpl.
   match goal with
   | |- ap ?f _ @ p x = p x => 
-    simple refine (ap (fun W => (ap f W @ p x)) FunExtDep_refl @ _)
-  end.
-  exact (concat_1p _).
+    exact (ap (fun W => (ap f W @ p x)) FunExtDep_refl)
+  end. 
 Defined.
 
 Lemma FunExt_ap {A : Type} {P : A -> Type} {f g : forall a : A, P a}  (p : f = g) :
   FunExtDep (fun x => ap (fun W => W x) p) = p.
 Proof.
   simple refine (f_understood f (fun g (p : f = g) => FunExtDep (fun x => ap (fun W => W x) p)) g p @ _). simpl.
-  simple refine (ap (fun W => W @ p) (FunExtDep_refl) @ (concat_1p _)).
+  exact (ap (fun W => W @ p) (FunExtDep_refl)).
 Defined.
   
 

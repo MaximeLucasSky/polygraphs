@@ -15,24 +15,19 @@ Proof.
     unfold compose. apply funext. simple refine (eqMorphPushout _ _ _).
     + intro b1. reflexivity.
     + intro b2. simpl. reflexivity.
-    + intros [a a']. simpl. exact ((concat_1p _) @ (concat_p1 _)^).
+    + intros [a a']. simpl. exact ((concat_p1 _)^).
 Defined.
 
 Definition ComposeMA_assoc {n :nat}  {F1 F2 F3 F4 : Type} {f1 : F1 -> F2} {f2 : F2 -> F3} {f3 : F3 -> F4}
          {aug1 : Aug F1 n} {aug2 : Aug F2 n} {aug3 : Aug F3 n} {aug4 : Aug F4 n}
          (G1 : MAug f1 aug1 aug2) (G2 : MAug f2 aug2 aug3) (G3 : MAug f3 aug3 aug4):
-  transport (fun W => MAug W aug1 aug4) (compose_assoc f3 f2 f1) (ComposeMA G1 (ComposeMA G2 G3)) =  (ComposeMA (ComposeMA G1 G2) G3).
+  (ComposeMA G1 (ComposeMA G2 G3)) =  (ComposeMA (ComposeMA G1 G2) G3).
 Proof.
-  destruct aug1 as [E1 d1], aug2 as [E2 d2], aug3 as [E3 d3], aug4 as [E4 d4].
-  destruct G1 as [G1E coh1] using caseMAug.
-  destruct G2 as [G2E coh2] using caseMAug.
-  destruct G3 as [G3E coh3] using caseMAug.
   simpl.
   simple refine (eq_MA _ _ _ _).
   - exact 1.
   - intros e x.
     simpl.
-    simple refine ((concat_1p _) @ _ ).
     match goal with
     | |- ?p @ ap ?f (?q @ ?r) = _ => simple refine (ap (fun W => p @ W) (ap_concat f q r) @ _)
     end.
@@ -57,24 +52,189 @@ Proof.
   exact ((concat_p1 _)^).
 Defined.
 
-Opaque eq_MA.
+Lemma ap_FreecomposeMA_inl {n :nat}  {F1 F2 F3 : Type} {f1 : F1 -> F2} {f2 : F2 -> F3}
+         {aug1 : Aug F1 n} {aug2 : Aug F2 n} {aug3 : Aug F3 n} 
+         (G1 : MAug f1 aug1 aug2) (G2 : MAug f2 aug2 aug3) (x : F1) :
+  ap (fun T => T (inl x)) (FreeComposeMA G1 G2) = 1.
+Proof.
+  simpl.
+  unfold FreeComposeMA. rewrite funextcompute. reflexivity.
+Defined.
+
+
+Lemma ap_FreecomposeMA_inr {n :nat}  {F1 F2 F3 : Type} {f1 : F1 -> F2} {f2 : F2 -> F3}
+         {aug1 : Aug F1 n} {aug2 : Aug F2 n} {aug3 : Aug F3 n} 
+         (G1 : MAug f1 aug1 aug2) (G2 : MAug f2 aug2 aug3) (x : (E aug1) × Ball n) :
+  ap (fun T => T (inr x)) (FreeComposeMA G1 G2) = 1.
+Proof.
+  simpl.
+  unfold FreeComposeMA. rewrite funextcompute. reflexivity.
+Defined.
+
+
+(* Section Foo. *)
+(*   Variables (T T': Type) (f g : T -> T') (A B : f = g) (a b : T) (p : a = b) (Ha : ap (fun h => h a) A = ap (fun h => h a) B). *)
+  
+(*   Lemma toto  : ap (fun h => h b) A = ap (fun h => h b) B. *)
+(*     refine (transport ( *)
+(*     . *)
+    
+
+Definition square  {T T' : Type} {a b : T} {f g : T -> T'} (e : a = b) (p : f = g) : 
+  ap (fun x => x a) p @ ap (fun x => g x) e = ap (fun x => f x) e @ ap (fun x => x b) p :> (f a = g b).
+Proof.
+  destruct e. simpl. exact (concat_p1 _).
+Defined.
+
+Lemma transport_lemma_dep
+      {T T': Type} {a b : T} {f g : T -> T'} (e : a = b) (p q : f = g) (Ha : ap (fun x => x a) p = ap (fun x => x a) q)
+      (Hb : ap (fun x => x b) p = ap (fun x => x b) q) :
+  ap (fun r => r @ (ap (fun x => g x) e)) Ha @ (square e q) = (square e p) @ ap (fun r => (ap (fun x => f x) e) @ r) Hb
+  -> transport (fun x => (ap (fun h => h x) p = ap (fun h => h x) q)) e Ha = Hb :> (_ = _ :> (f b = g b)).
+Proof.
+  intro.
+  destruct e.
+  destruct p.
+  simpl  in *. 
+  refine (_ @ H @ _).
+  - rewrite <- Ha. reflexivity.
+  - apply ap_id.
+Defined.
+
+Lemma ap_at {T: Type} {x y z: T} {e1 e2 e3: x = y} (p : y = z) (q1: e1 = e2) (q2 : e2 = e3) :
+  ap (fun r => r @ p) (q1 @ q2) = (ap (fun r => r @ p) q1) @ (ap (fun r => r @ p) q2).
+Proof.
+  destruct q1. reflexivity.
+Defined.
+
+Lemma VV {T : Type} {x y : T} (p : x = y) : p^^ = p.
+  now destruct p.
+Defined.
 
 Lemma Free_composeMA_assoc {n :nat}  {F1 F2 F3 F4 : Type} {f1 : F1 -> F2} {f2 : F2 -> F3} {f3 : F3 -> F4}
          {aug1 : Aug F1 n} {aug2 : Aug F2 n} {aug3 : Aug F3 n} {aug4 : Aug F4 n}
          (G1 : MAug f1 aug1 aug2) (G2 : MAug f2 aug2 aug3) (G3 : MAug f3 aug3 aug4):
   ap FreeMA (ComposeMA_assoc G1 G2 G3) = (FreeComposeMA G1 (ComposeMA G2 G3))
-                                           @ ap (fun W => compose W (FreeMA G1)) (FreeComposeMA G2 G3) 
-                                           @ ap (fun W => compose (FreeMA G3) W) (FreeComposeMA G1 G2)^
-                                         @ (FreeComposeMA (ComposeMA G1 G2) G3)^ .
+                                           @ (ap (fun W => compose W (FreeMA G1)) (FreeComposeMA G2 G3) 
+                                           @ (ap (fun W => compose (FreeMA G3) W) (FreeComposeMA G1 G2)^
+                                         @ (FreeComposeMA (ComposeMA G1 G2) G3)^)) .
 Proof.
- destruct aug1 as [E1 d1], aug2 as [E2 d2], aug3 as [E3 d3], aug4 as [E4 d4]. 
- destruct G1 as [G1E coh1] using caseMAug.
- destruct G2 as [G2E coh2] using caseMAug.
- destruct G3 as [G3E coh3] using caseMAug.
- unfold ComposeMA_assoc. simpl. 
+  apply eq_fun.
+  unshelve refine (Pushout_rect_dep _ _ _ _ ).
+  - intro x.
+    refine ((ap_compose FreeMA _ (ComposeMA_assoc G1 G2 G3))^ @ _).  simpl.
+    refine (ap_constant _ _ @ _).
+    match goal with
+    | |- 1 = ap ?f (?p1 @ (?p2 @ (?p3 @ ?p4))) => refine (_ @ (ap_concat _ _ _)^);
+                                                  refine (_ @ ap (fun T => (ap f p1) @ T) (ap_concat f p2 (p3 @ p4))^);
+                                                  refine (_ @ ap (fun T => (ap f p1) @ ((ap f p2) @ T)) (ap_concat f p3 p4)^)
+    end.
+    unfold compose in *.
+    match goal with
+    | |- 1 = ?a1 @ (ap ?f (ap ?g ?h) @ (?a2  @ ?a3)) => refine (_ @ ap (fun T => a1 @ (T @ (a2 @ a3))) (ap_compose g f h))
+    end.
+    cbn.
+    match goal with
+    | |- 1 =  ?a1 @ (?a2 @  (ap ?f (ap ?g ?h) @ ?a3)) => refine (_ @ ap (fun T => a1 @ (a2 @ (T @ a3))) (ap_compose g f h))
+    end.
+    match goal with
+    | |- 1 = ?q1 @ (?q2 @ (ap ?f ?p1^ @ ap ?g ?p2^)) => refine (_ @ ap (fun T => q1 @ (q2 @ (ap f p1^ @ T))) (concat_ap_V g p2)^);
+                                                   refine (_ @ ap (fun T => q1 @ (q2 @ (T @ (ap g p2)^))) (concat_ap_V f p1)^)
+    end.
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2)) @ ?a1 =>  refine (_ @ ap (fun T => T @ a1) (ap_FreecomposeMA_inl G1 G2 x)^)
+    end. simpl.
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2)) @ ?a1 =>  refine (_ @ ap (fun T => T @ a1) (ap_FreecomposeMA_inl G1 G2 (f1 x))^)
+    end. simpl.
+    match goal with
+      |- 1 = (ap _ ?q)^ @ ?p=> refine (_ @ ap (fun T => T^ @ p) (ap_compose (fun x0 => x0 (inl x)) (FreeMA G3) q)^)
+    end.
+    match goal with
+    | |- 1 = (ap ?a2 (ap _ (FreeComposeMA ?G1 ?G2))) ^ @ ?a1 =>  refine (_ @ ap (fun T => (ap a2 T) ^ @ a1) (ap_FreecomposeMA_inl G1 G2 x)^)
+    end. simpl. 
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2))^ =>  exact ( ap (fun T => T^) (ap_FreecomposeMA_inl G1 G2 x)^)
+    end. 
+  - intro b.
+    refine ((ap_compose FreeMA _ (ComposeMA_assoc G1 G2 G3))^ @ _). 
+    match goal with
+    | |- _ = ap ?f (?p1 @ (?p2 @ (?p3 @ ?p4))) => refine (_ @ (ap_concat f p1 ( p2 @ (p3 @ p4)))^);
+                                                  refine (_ @ ap (fun T => (ap f p1) @ T) (ap_concat f p2 (p3 @ p4))^);
+                                                  refine (_ @ ap (fun T => (ap f p1) @ ((ap f p2) @ T)) (ap_concat f p3 p4)^)
+    end. refine (eq_MA_inr _ _ _ _ _ @ _). simpl.
+    match goal with
+    | |- 1 = (?a1 @ (ap ?f (ap ?g ?h) @ (?a2  @ ?a3))) => refine (_ @ ap (fun T => a1 @ (T @ (a2 @ a3))) (ap_compose g f h))
+    end.
+    cbn.
+    match goal with
+    | |- 1 =  ?a1 @ (?a2 @  (ap ?f (ap ?g ?h) @ ?a3)) => refine (_ @ ap (fun T => a1 @ (a2 @ (T @ a3))) (ap_compose g f h))
+    end.
+    match goal with
+    | |- 1 = ?q1 @ (?q2 @ (ap ?f ?p1^ @ ap ?g ?p2^)) => refine (_ @ ap (fun T => q1 @ (q2 @ (ap f p1^ @ T))) (concat_ap_V g p2)^);
+                                                   refine (_ @ ap (fun T => q1 @ (q2 @ (T @ (ap g p2)^))) (concat_ap_V f p1)^)
+    end.
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2)) @ ?a1 =>  refine (_ @ ap (fun T => T  @ a1) (ap_FreecomposeMA_inr G1 G2 b)^)
+    end. simpl.
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?F1 ?F2)) @ ?a1 =>  refine (_ @ ap (fun T => T @ a1) (ap_FreecomposeMA_inr F1 F2 (mkPair (ME G1 b,1) b,2 ))^)
+    end. simpl.
+    match goal with
+    | |- 1 = (ap ?f (FreeComposeMA ?G1 ?G2)) ^ @ ?a1 =>
+      change f with (compose (fun y => FreeMA G3 y) (fun x0 : [aug1 ]* -> [aug3 ]* => x0 (inr b)))
+    end.
+    unfold compose.
+      match goal with
+      |- 1 = (ap _ ?q)^ @ ?p => refine (_ @ ap (fun T => T^ @ p) (ap_compose (fun x0 => x0 (inr b)) (FreeMA G3) q)^)
+    end.
+    match goal with
+    | |- 1 = (ap ?a2 (ap _ (FreeComposeMA ?G1 ?G2))) ^ @ ?a1 =>  refine (_ @ ap (fun T => (ap a2 T) ^ @ a1) (ap_FreecomposeMA_inr G1 G2 b)^)
+    end. simpl.
+    match goal with
+    | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2))^ =>  exact (ap (fun T => T^) (ap_FreecomposeMA_inr G1 G2 b)^)
+    end.
+  - intro a. refine (transport_lemma_dep _ _ _ _ _ _).
+    match goal with
+    | |- (ap (fun r => r @ ?p) (?q1 @ ?q2)) @ ?u1 = _ @ _ =>
+      refine (ap (fun T => T @ u1) (ap_at _ _ _) @ _)
+    end.
+    rewrite 12!ap_at.
+    match goal with
+    | |- (ap (fun r => r @ ?p) ?q^ @ ?u) @ ?v = _ => refine (ap (fun T => (T @ u) @ v ) _ @ _)
+    end.
+    + match goal with
+      | |- ap (fun r => r @ ?p) ?q^ = _ => refine (concat_ap_V (fun r => r @ p) q @ _)
+      end.
+      refine (ap (fun T => T^) _ @ _).
+      match goal with
+      | |- ap (fun r => r @ (ap ?t ?i)) ?q = _ =>  assert (i^^ = i)
+      end.
+      destruct (incoh a). reflexivity.
+
+      FreeMA (ComposeMA (ComposeMA G1 G2) G3) (inl (d aug1 a)) =
+      inl (compose ( compose f1 f2) f3) (d aug1 a)
+      =
+      inr (mkPair (compose (compose (ME G1) (ME G2)) (ME G3)  
+       FreeMA (ComposeMA (ComposeMA G1 G2) G3)
+         (inr {| fst := a,1; snd := Faces n a,2 |})
+      
+      destruct H.
+    
+    
+    match goal with
+    | |- (ap (fun r => r @ ?p) ?q11^) @ (ap (fun r => r @  _) (?q21 @ ?q22)) @ ?u1 = _ => idtac
+                                                           end.
+Admitted. 
+
+
+               
+  intro a. 
+  unfold ComposeMA_assoc. unfold FreemposeMA.
  match goal with 
- | |- ap FreeMA (eq_MA ?a1 ?a2 ?a3 ?a4) = _ => simple refine ( (ap_FreeMA (F := F1) (F' := F4)_ _ a1 a2 a3 a4) @ _)
- end. Opaque FreeMA_eq.
+
+ | |- ap FreeMA (eq_MA ?a1 ?a2 ?a3 ?a4) = _ => simple refine ( (ap_FreeMA (F := F1) (F' := F4) a1 a2 a3 a4) @ _)
+ end. 
  Admitted.
  
 Lemma transport_compose {A A' : Type} (f : A -> A') (P : A' -> Type) {x y : A} (p : x = y) (u : P (f x)):
@@ -114,7 +274,7 @@ Proof.
     simpl. unshelve econstructor.
     + reflexivity.
     + reflexivity.
-  - destruct p as [p augp] using (caseS' n).  destruct q as [q augq] using (caseS' n).  destruct r as [r augr] using (caseS' n).  destruct s as [s augs] using (caseS' n).
+  - destruct p as [p augp] using caseS'.  destruct q as [q augq] using caseS'.  destruct r as [r augr] using caseS'.  destruct s as [s augs] using caseS'.
     destruct F as [F Faug] using (caseMS' _ _ _ _ _).
     destruct G as [G Gaug] using (caseMS' _ _ _ _ _).
     destruct H as [H Haug] using (caseMS' _ _ _ _ _).
