@@ -178,7 +178,7 @@ Proof.
     | |- 1 = (ap _ (FreeComposeMA ?G1 ?G2)) @ ?a1 =>  refine (_ @ ap (fun T => T  @ a1) (ap_FreecomposeMA_inr G1 G2 b)^)
     end. simpl.
     match goal with
-    | |- 1 = (ap _ (FreeComposeMA ?F1 ?F2)) @ ?a1 =>  refine (_ @ ap (fun T => T @ a1) (ap_FreecomposeMA_inr F1 F2 (mkPair (ME G1 b,1) b,2 ))^)
+    | |- 1 = (ap _ (FreeComposeMA ?F1 ?F2)) @ ?a1 =>  refine (_ @ ap (fun T => T @ a1) (ap_FreecomposeMA_inr F1 F2 (ME G1 b.1, b.2 ))^)
     end. simpl.
     match goal with
     | |- 1 = (ap ?f (FreeComposeMA ?G1 ?G2)) ^ @ ?a1 =>
@@ -203,6 +203,25 @@ Proof.
     match goal with
     | |- (ap (fun r => r @ ?p) ?q^ @ ?u) @ ?v = _ => refine (ap (fun T => (T @ u) @ v ) _ @ _)
     end.
+    assert (inl (f1 := d aug4) (f2 := fun x => (x.1, Faces n x.2)) (f3 (f2 (f1 (d aug1 a)))) = inr (ME G3 (ME G2 (ME G1 a.1)), Faces n a.2)).
+    { refine (ap (fun x => inl (f3 (f2 x))) (Md G1 a.1 a.2 )^ @ _).
+      refine (ap (fun x => inl (f3 x)) (Md G2 _ _)^ @ _).
+      refine (ap (fun x => inl x) (Md G3 _ _)^ @ _).
+      exact (incoh _). } (** How to store the term? **)
+    +
+      Check (Md G1).
+    Eval compute in (FreeMA (ComposeMA (ComposeMA G1 G2) G3)
+                            (inr (a .1, Faces n a .2))).
+    
+    Lemma test :
+      ap
+       (fun
+          x : Pushout (d aug1)
+                (fun x : E aug1 × Sphere n => (x .1, Faces n x .2)) =>
+        FreeMA (ComposeMA (ComposeMA G1 G2) G3) x) 
+       (incoh a) :   inl (f3 (f2 (f1 (d aug1 a)))) = inr (ME G3 (ME G2 (ME G1 a.1)), Faces n a.2)
+       FreeMA (ComposeMA (ComposeMA G1 G2) G3)
+         (inr (a .1, Faces n a .2))
     + match goal with
       | |- ap (fun r => r @ ?p) ?q^ = _ => refine (concat_ap_V (fun r => r @ p) q @ _)
       end.
@@ -210,6 +229,9 @@ Proof.
       match goal with
       | |- ap (fun r => r @ (ap ?t ?i)) ?q = _ =>  assert (i^^ = i)
       end.
+
+      
+      
       destruct (incoh a). reflexivity.
 
       FreeMA (ComposeMA (ComposeMA G1 G2) G3) (inl (d aug1 a)) =

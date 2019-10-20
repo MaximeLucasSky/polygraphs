@@ -6,7 +6,7 @@ Require Import PolyMorphs.
 
 
 
-Definition EmptyA (n : nat) (T : Type) : Aug T n := mkAug False (fun x => False_rect _ x,1).
+Definition EmptyA (n : nat) (T : Type) : Aug T n := mkAug False (fun x => False_rect _ x.1).
 
 Definition Empty {n : nat} (p : Pol n) : Pol (S n) :=  Ext p (EmptyA (S n) (Free p)). 
 
@@ -83,9 +83,9 @@ Definition UnitA  {n : nat} {F T : Type}  (aug : Aug F n) (f : FreeA aug -> T) :
 Proof.
   unshelve econstructor.
   - intro e. simple refine (mkPullB _ _ _).
-    + intro b. apply f. simpl. simple refine (inr _). exact (mkPair e b).
-    + intro. simple refine (inl _). exact (d aug (mkPair e X)).
-    + apply funext. intro. unfold nFaces. unfold compose. exact (ap f (incoh (mkPair e x))^).
+    + intro b. apply f. simpl. simple refine (inr _). exact (e, b).
+    + intro. simple refine (inl _). exact (d aug (e, X)).
+    + apply funext. intro. unfold nFaces. unfold compose. exact (ap f (incoh (e, x))^).
   - simpl. intros. reflexivity.
 Defined.
 
@@ -95,12 +95,12 @@ Definition UnitBisA {n : nat} {F : Type} (aug : Aug F (S n)) (f : F -> (Free (Fo
 Proof.
   unshelve econstructor.
   -  intro e. simpl. simple refine (mkPullB _ _ _).
-     + intro x. exact (inr (mkPair e x)).
+     + intro x. exact (inr (e, x)).
      + intro x. simpl.
-       apply f. exact (d aug (mkPair e x)).
+       apply f. exact (d aug (e, x)).
      + unfold nFaces. unfold compose. apply funext. intro x.
-       simple refine (_ @ (ap (fun W => W (d aug (mkPair e x))) H^)).
-       exact ((incoh (mkPair e x))^).
+       simple refine (_ @ (ap (fun W => W (d aug (e, x))) H^)).
+       exact ((incoh (e, x))^).
   - reflexivity.
 Defined.
 
@@ -152,15 +152,15 @@ Proof.
     end. simpl.
     match goal with
     | |- _ = ap (Pushout_rect ?a1 ?a2 ?a3) (incoh ?a4) =>
-      simple refine (_ @ (Pushout_rect_compute_coh (f1 := (fun x  => pi2 x,1 x,2)) )^)
+      simple refine (_ @ (Pushout_rect_compute_coh (f1 := (fun x  => pi2 x.1 x.2)) )^)
     end.
     simpl.
     match goal with
     | |- _ = ap ?f ?p ^ => simple refine (_ @ (concat_ap_V f p)^)
     end.
     match goal with
-    | |- _ = (ap (fun W => W a,2) (funext ?p))^ => 
-      simple refine (_ @ (ap (fun W => W^) (funextcompute p a,2)^))
+    | |- _ = (ap (fun W => W a.2) (funext ?p))^ => 
+      simple refine (_ @ (ap (fun W => W^) (funextcompute p a.2)^))
     end.
     match goal with
     | |- ?p @ _ = _ => simple refine ((ap (fun W => p @ W) (ap_id _)) @ _)

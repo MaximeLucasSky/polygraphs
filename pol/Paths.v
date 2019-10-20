@@ -39,12 +39,20 @@ Arguments mkPullB {_ _ _ _ _} _ _ _.
 Notation "1" := (eq_refl _). 
 
 
+Record Pair (A B : Type) :=
+  mkPair {
+      fst : A;
+      snd : B
+    }.
 
-Definition proj0 {A : Type} {x y : A} (p : x = y) : A := x.
-Definition proj1 {A : Type} {x y : A} (p : x = y) : A := y.
 
-Notation "p .0" := (proj0 p) (at level 3) : type_scope.
-Notation "p .1" := (proj1 p) (at level 3) : type_scope.
+Notation "x .1" := (fst _ _ x) (at level 5).
+Notation "x .2" := (snd _ _ x) (at level 5).
+Arguments mkPair {_ _} _ _.
+
+Notation "A × B " := (@Pair A B) (at level 20).
+
+Notation "( a , b )" := (mkPair a b).
 
 
 Definition inverse {A : Type} {x y : A} (p : x = y) : (y = x) :=

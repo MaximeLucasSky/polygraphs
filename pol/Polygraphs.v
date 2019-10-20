@@ -19,17 +19,6 @@ Definition FreeType {F : Type} {n : nat} (X : @Augmentation F n) : Type :=
 
 Set Primitive Projections.
 
-Record Pair (A B : Type) :=
-  mkPair {
-      fst : A;
-      snd : B
-    }.
-
-Notation "x ,1" := (fst _ _ x) (at level 5).
-Notation "x ,2" := (snd _ _ x) (at level 5).
-Arguments mkPair {_ _} _ _.
-
-Notation "A × B " := (@Pair A B) (at level 20).
 
 Record Aug (F : Type) (n : nat) :=
               mkAug {
@@ -46,7 +35,7 @@ Arguments d {_ _} _.
 
 
 Definition FreeA {F : Type} {n : nat} (aug : Aug F n) : Type :=
-  Pushout (d aug) (fun x  => mkPair (x,1) (Faces n x,2) : (E aug) × Ball n).
+  Pushout (d aug) (fun x  => (x.1 , Faces n x.2) : (E aug) × Ball n).
   
 
 Notation "[ aug ]*" := (FreeA aug).
@@ -72,7 +61,7 @@ Definition tr {n : nat} (P : Pol n) : Pol (pred n) :=
 
 Definition PAug {n : nat} (P : Pol n) : Aug (Free (tr P)) n :=
   match P with
-  | Disc E => mkAug False (fun x => x,1)
+  | Disc E => mkAug False (fun x => x.1)
   | Ext P aug => aug
   end.
 
@@ -101,7 +90,7 @@ Definition caseS' {n : nat} (p : Pol (S n)) :
 Record MAug {F F' : Type} {n :nat} (f : F -> F') (aug : Aug F n) (aug' : Aug F' n) :=
   mkMAug {
       ME: E aug -> E aug';
-      Md : forall e x, d aug' (mkPair (ME e) x) = f (d aug (mkPair e x))
+      Md : forall e x, d aug' (ME e, x) = f (d aug (e, x))
     }.
 
 Arguments ME {_ _ _ _ _ aug'} _ _.
@@ -125,10 +114,10 @@ Proof.
   simple refine (Pushout_rect _ _ _).
   - intro xf. exact (inl (f xf)).
   - intros. simple refine (inr _).
-    exact (mkPair (ME Phi X,1) X,2).
+    exact (ME Phi X.1, X.2).
   - intro x. simpl.
-    simple refine ((ap inl (Md Phi x,1 x,2))^ @ _). 
-    exact (incoh (mkPair (ME Phi x,1) (x,2))).
+    simple refine ((ap inl (Md Phi x.1 x.2))^ @ _). 
+    exact (incoh (ME Phi x.1, x.2)).
 Defined.
 
 
@@ -154,11 +143,11 @@ Proof.
     rewrite concat_p1. unfold compose.
     rewrite ap_compose. unfold FreeMA. unfold compose.
     match goal with
-    | |- _ = ap (Pushout_rect ?g1 ?g2 ?H) (incoh x) => refine (_ @ (Pushout_rect_compute_coh (f1 := d aug) (f2 := fun x => mkPair x,1 (Faces n x,2)) (g1:= g1) (g2 := g2) (a := x))^)
+    | |- _ = ap (Pushout_rect ?g1 ?g2 ?H) (incoh x) => refine (_ @ (Pushout_rect_compute_coh (f1 := d aug) (f2 := fun x => (x.1, (Faces n x.2))) (g1:= g1) (g2 := g2) (a := x))^)
     end.
     simpl. rewrite ap_concat.
     match goal with
-    | |- ap ?F (ap (Pushout_rect ?g1 ?g2 ?H) (incoh x)) = _ => pose proof (Pushout_rect_compute_coh (f1 := d aug) (f2 := fun x => mkPair x,1 (Faces n x,2)) (g1 := g1) (g2 := g2) (H := H) (a := x))
+    | |- ap ?F (ap (Pushout_rect ?g1 ?g2 ?H) (incoh x)) = _ => pose proof (Pushout_rect_compute_coh (f1 := d aug) (f2 := fun x => (x.1, (Faces n x.2))) (g1 := g1) (g2 := g2) (H := H) (a := x))
     end.
     match goal with
     | |- ap ?F ?u = ?v => refine (apap F H @ _); clear H
@@ -171,7 +160,7 @@ Proof.
     unfold compose. simpl.
     match goal with
     | |- ?a1 @ ap (Pushout_rect ?g1 ?g2 ?H) (incoh ?y) = _ =>
-      refine (ap (fun T => a1 @ T) (Pushout_rect_compute_coh (f1 := d aug') (f2 := fun x => mkPair x,1 (Faces n x,2)) (g1 := g1) (g2 := g2) (H := H)) @ _)
+      refine (ap (fun T => a1 @ T) (Pushout_rect_compute_coh (f1 := d aug') (f2 := fun x => (x.1, Faces n x.2)) (g1 := g1) (g2 := g2) (H := H)) @ _)
     end.
     simpl. rewrite concat_V.
     pose proof @ap_compose.

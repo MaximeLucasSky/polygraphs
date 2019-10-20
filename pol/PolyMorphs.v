@@ -23,7 +23,7 @@ Definition CounitA {T F : Type} (n : nat)  ( f : F -> T ) : FreeA (ForgetA f n) 
 Proof.
   simple refine (Pushout_rect _ _ _).
   - exact f.
-  - intro. exact (pi1 X,1 X,2).
+  - intro. exact (pi1 X.1 X.2).
   - intros [x e]. simpl. exact (ap (fun W => W e) (coh x)^).
 Defined.
 
@@ -56,7 +56,7 @@ Opaque ForgetAndCounit.
 
 Lemma eq_MA {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} (G H : aug - f -- aug')
       (p : ME G = ME H )
-      (q : forall e x, ((ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x)) =  Md G e x) :
+      (q : forall e x, ((ap (fun W => d aug' (W e, x)) p) @ (Md H e x)) =  Md G e x) :
     G = H :> MAug f aug aug'.
 Proof.
   destruct H as [HME HMd].
@@ -73,9 +73,9 @@ Defined.
 Lemma FreeMA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n}
       (G H : aug - f -- aug')
       (p : ME G = ME H )
-      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x))
+      (q : forall e x,  (ap (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x))
       (x : E aug × Ball n) :
-  FreeMA G (inr x) = inr (mkPair (ME G x,1) x,2).
+  FreeMA G (inr x) = inr (ME G x.1, x.2).
 Proof.
   reflexivity.
 Defined.
@@ -83,9 +83,9 @@ Defined.
 Lemma eq_MA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
       (G H : aug - f -- aug')
       (p : ME G = ME H )
-      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x))
+      (q : forall e x,  (ap (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x))
       (x : E aug × Ball n) :
-  ap (fun T => FreeMA T (inr x)) (eq_MA G H p q) = ap (fun T => inr (mkPair (T x,1) x,2)) p.
+  ap (fun T => FreeMA T (inr x)) (eq_MA G H p q) = ap (fun T => inr (T x.1, x.2)) p.
 Proof.
   simpl. unfold eq_MA. destruct H as [HE Hd]. simpl in *.
   destruct p. simpl in *.
@@ -98,7 +98,7 @@ Defined.
 Lemma FreeMA_eq  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
       (G H : aug - f -- aug')
       (p : ME G = ME H )
-      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x)) :
+      (q : forall e x,  (ap (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x)) :
   FreeMA G = FreeMA H :> ([aug]* -> [aug']* ).
 Proof.
   destruct H as [HME HMd].
@@ -142,7 +142,7 @@ Defined.
 Lemma ap_FreeMA  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
       (G H : aug - f -- aug')
       (p : ME G = ME H )
-      (q : forall e x,  (ap (fun W => d aug' (mkPair (W e) x)) p) @ (Md H e x) = (Md G e x)):
+      (q : forall e x,  (ap (fun W => d aug'  (W e, x)) p) @ (Md H e x) = (Md G e x)):
   ap FreeMA (eq_MA G H p q) = FreeMA_eq G H p q :> (FreeMA G = FreeMA H :> (FreeA aug -> FreeA aug')).
 Proof.
   destruct H as [HE Hd]. simpl in *.
@@ -183,11 +183,11 @@ Proof.
 Defined.
 
 Definition pre_ap_counit_coh {T F : Type} (n : nat)  ( f : F -> T ) (a : E (ForgetA f n) × Sphere n) :
-  CounitA n f (inl (d (ForgetA f n) a)) = CounitA n f (inr {| fst := a,1; snd := Faces n a,2 |}) :=
-  ap (fun T => T a,2) (coh a,1)^.
+  CounitA n f (inl (d (ForgetA f n) a)) = CounitA n f (inr {| fst := a.1; snd := Faces n a.2 |}) :=
+  ap (fun T => T a.2) (coh a.1)^.
   
 Lemma ap_counit_coh {T F : Type} (n : nat)  ( f : F -> T ) (a : E (ForgetA f n) × Sphere n) :
-  (ap (fun x : [ForgetA f n ]* => CounitA n f x) (incoh a)) =  ap (fun T => T a,2) (coh a,1)^.
+  (ap (fun x : [ForgetA f n ]* => CounitA n f x) (incoh a)) =  ap (fun T => T a.2) (coh a.1)^.
 Proof.
   exact Pushout_rect_compute_coh.
 Defined.
