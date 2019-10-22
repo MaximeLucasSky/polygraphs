@@ -4,7 +4,7 @@ Require Import HIT.
 Require Import Polygraphs.
 Require Import PolyMorphs.
 
-(** This file contains the definition fo the unit of the adjunction, together with the proof of the first triangular identity. To do that, we first define and show some properties of the inclusion of n-polygraphs into (n+1)-polygraphs **)
+
 
 
 Definition EmptyA (n : nat) (T : Type) : Aug T n := mkAug False (fun x => False_rect _ x.1).
@@ -14,6 +14,8 @@ Definition Empty {n : nat} (p : Pol n) : Pol (S n) :=  Ext p (EmptyA (S n) (Free
 Definition FreeEmptyA (n : nat) (T : Type) : T -> FreeA (EmptyA n T) := inl.
 
 Definition FreeEmpty {n :nat} (p : Pol n) : Free p -> Free (Empty p) := FreeEmptyA (S n) (Free p).
+
+
 
 
 Definition EmptyMA (n : nat) (T : Type) (aug : Aug T n) : MAug (fun x => x) (EmptyA n T) aug.
@@ -38,8 +40,6 @@ Defined.
 Definition injectA {n : nat} {F : Type} (aug : Aug F n) : F -> FreeA aug := compose (FreeMA (EmptyMA n F aug)) (FreeEmptyA n F).
 
 Definition injectPol {n :nat} (p : Pol n) (aug : Aug (Free p) (S n)) : Free p -> Free (Ext p aug) := injectA aug.
-
-(** Unit and triangular identity **)
 
 Definition UnitA  {n : nat} {F T : Type}  (aug : Aug F n) (f : FreeA aug -> T) :
   aug - (injectA aug) -- (ForgetA f n).

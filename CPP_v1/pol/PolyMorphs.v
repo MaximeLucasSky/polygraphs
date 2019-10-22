@@ -3,13 +3,9 @@ Require Import Paths.
 Require Import HIT.
 Require Import Polygraphs.
 
-(** This file contains properties on the Forgetful functor, from types to polygraphs, and of the Counit of the adjunction.
-More precisely, we prove
-  - the action of the Forgetful functor on objects together with the existence of the Counit
-  - the functoriality of the Forgetful functor together with the naturality of the Counit. *)
+(* Morphism of Polygraphs *)
 
 
-(** Forgetful functor and Counit **)
 
 Definition ForgetA {T F: Type} (f : F -> T )  (n : nat)  : Aug F n.
 Proof.
@@ -51,7 +47,90 @@ Notation Counit T n := (sndd (ForgetAndCounit n) T).
 
 Opaque ForgetAndCounit.
 
-(** Functoriality of the forgetful functor and naturality of the conuit **)
+
+Lemma eq_MA {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x, ((f_equal (fun W => d aug' (W e, x)) p) @ (Md H e x)) =  Md G e x) :
+    G = H :> MAug f aug aug'.
+Proof.
+  destruct H as [HME HMd].
+  simpl in  p. destruct p.
+  assert (Md G = HMd).
+  {
+    repeat (apply FunExtDep; intro). simpl in *.
+    exact ((q x x0)^ @ concat_1p _).
+  }
+  now destruct H. 
+Defined.
+
+
+Lemma FreeMA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n}
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (f_equal (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x))
+      (x : E aug × Ball n) :
+  FreeMA G (inr x) = inr (ME G x.1, x.2).
+Proof.
+  reflexivity.
+Defined.
+
+Lemma eq_MA_inr {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (f_equal (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x))
+      (x : E aug × Ball n) :
+  f_equal (fun T => FreeMA T (inr x)) (eq_MA G H p q) = f_equal (fun T => inr (T x.1, x.2)) p.
+Proof.
+  simpl. unfold eq_MA. destruct H as [HE Hd]. simpl in *.
+  destruct p. simpl in *.
+  match goal with
+  | |- f_equal _ (match ?a return _ with |_ => _ end q) = 1 => destruct a
+  end.
+  reflexivity.
+Defined.
+
+Lemma FreeMA_eq  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (f_equal (fun W => d aug' (W e, x)) p) @ (Md H e x) = (Md G e x)) :
+  FreeMA G = FreeMA H :> ([aug]* -> [aug']* ).
+Proof.
+  destruct H as [HME HMd].
+  simpl in  p. destruct p.
+  assert (Md G = HMd).
+  {
+    repeat (apply FunExtDep; intro). simpl in *.
+    exact ((q x x0)^ @ concat_1p _).
+  }
+  now destruct H.                   
+Defined.
+
+
+
+Lemma ap_FreeMA  {F F' : Type} {n : nat} {f : F -> F'} {aug : Aug F n} {aug' : Aug F' n} 
+      (G H : aug - f -- aug')
+      (p : ME G = ME H )
+      (q : forall e x,  (f_equal (fun W => d aug'  (W e, x)) p) @ (Md H e x) = (Md G e x)):
+  f_equal FreeMA (eq_MA G H p q) = FreeMA_eq G H p q :> (FreeMA G = FreeMA H :> (FreeA aug -> FreeA aug')).
+Proof.
+  destruct H as [HE Hd]. simpl in *.
+  destruct p. simpl in q.
+  set (q' := fun e x => (concat_1p _ )^ @ q e x).
+  assert ((fun e x => (concat_1p _) @ (q' e x)) = q).
+  { apply FunExtDep. intro. apply FunExtDep. intro. subst q'. simpl.
+    rewrite assoc. rewrite concat_pV. exact (concat_1p _).
+  }
+  clearbody q'. destruct H.
+  refine (destruct_fun_eq (fun G1 G2 q =>
+                             f_equal FreeMA (eq_MA (mkMAug (ME G) G2) (mkMAug (ME G) G1) 1 (fun e x => concat_1p _ @ q e x )) =
+                             FreeMA_eq (mkMAug (ME G) G2)  (mkMAug (ME G) G1) 1 (fun e x => concat_1p _ @ q e x ))
+                          _ q').
+  intro. clear Hd q'. simpl.
+  match goal with
+  | |- f_equal FreeMA
+         (match ?f in (_ = y) return _ with | _ => _ end _) = _ => destruct f
+  end. reflexivity.
+Defined.
 
 
 Definition ForgetMA (n : nat) {T T' : Type} {F F' : Type} (g : F -> T) (g' : F' -> T')  (Ff: F -> F') (Tf : T -> T')

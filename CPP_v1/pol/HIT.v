@@ -1,7 +1,7 @@
 Require Import Basics.
 Require Import Paths.
 
-(** We define two Higher indutive types in this file: suspensions and pushouts. **)
+
 
 Module Export Suspension.
   Private Inductive Suspension (A : Type) : Type :=
@@ -53,7 +53,7 @@ Defined.
 Definition SuspensionMap {A B : Type} (f : A -> B) (x : Suspension A) : Suspension B :=
   SuspensionInduction (NN B) (SS B) (fun a => pathSuspension (f a)) x.
 
-(** The suspension allows us to recursively define the sphere and the ball **)
+(*Ici, Sphere n est le bord de Ball n, au lieu du bord de  Ball n+1 traditionnellement *)
 Fixpoint Sphere (n : nat) : Type :=
   match n with
   |0 => False
@@ -108,8 +108,6 @@ Module Export Pushout.
 
   Arguments incoh {_ _ _ _ _} _.
 
-
-  (** We first define a non-dependent version of the eliminator for PUshouts **)
   Definition Pushout_rect {A B1 B2 : Type} {f1 : A -> B1} {f2 : A -> B2}
              {B : Type} (g1 : B1 -> B) (g2 : B2 -> B)
              (H : forall a : A, (g1 (f1 a) = g2 (f2 a))) (x : Pushout f1 f2) : B :=
@@ -160,8 +158,7 @@ Proof.
   destruct p.
   reflexivity.
 Defined.
-
-(** This is an equality criterion for morphisms from a Pushout **)
+                
 
 Definition eqMorphPushout {A B1 B2 T: Type} {f1 : A -> B1} {f2 : A -> B2} {F G : Pushout f1 f2 -> T}
            (H1: forall b1 : B1, F (inl b1) = G (inl b1))
